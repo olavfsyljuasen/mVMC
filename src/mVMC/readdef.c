@@ -1029,7 +1029,7 @@ int ReadDefFileNInt(char *xNameListFile, MPI_Comm comm) {
                  + Nsite /* GutzwillerIdx */
                  + Nsite * Nsite /* JastrowIdx */
                  + Nsite * Nsite /* SpinJastrowIdx */
-                 + Nsite * Nsite * Nsite /* Jastrow3Idx???? OFS */
+                 + Nsite * Nsite * Nsite /* Jastrow3Idx???? OFS Is a dense array needed? */
                  + 2 * Nsite * NDoublonHolon2siteIdx /* DoublonHolon2siteIdx */
                  + 4 * Nsite * NDoublonHolon4siteIdx /* DoublonHolon4siteIdx */
                  //+ (2*Nsite)*(2*Nsite) /* OrbitalIdx */ //fsz
