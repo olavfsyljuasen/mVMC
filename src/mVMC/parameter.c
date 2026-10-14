@@ -207,7 +207,7 @@ double shiftDH2() {
   if(NDoublonHolon2siteIdx==0) return 0.0;
 
   /* 2-site doublon-holon correlation factor */
-  offset = NGutzwillerIdx + NJastrowIdx + NSpinJastrowIdx;
+  offset = NGutzwillerIdx + NJastrowIdx + NSpinJastrowIdx + NJastrow3Idx;
   for(xn=0;xn<2*NDoublonHolon2siteIdx;xn++) { /* factor 2: d or h */
     /* n = offset + xn + (xdh+2*xm)*xNDoublonHolon2siteIdx; */
     n0 = offset + xn;
@@ -232,7 +232,7 @@ double shiftDH4() {
 
   if(NDoublonHolon4siteIdx==0) return 0.0;
 
-  offset = NGutzwillerIdx + NJastrowIdx + NSpinJastrowIdx + 6*NDoublonHolon2siteIdx;
+  offset = NGutzwillerIdx + NJastrowIdx + NSpinJastrowIdx + NJastrow3Idx + 6*NDoublonHolon2siteIdx;
   for(xn=0;xn<2*NDoublonHolon4siteIdx;xn++) { /* factor 2: d or h */
     /* n = offset + xn + (xdh+2*xm)*xNDoublonHolon4siteIdx; */
     n0 = offset + xn;
@@ -281,6 +281,9 @@ void SetFlagShift() {
 
   /* Skip SpinJastrow (no shift needed) */
   end += NSpinJastrowIdx;
+
+  /* Skip Jastrow3 (no shift needed??? OFS) */
+  end += NJastrow3Idx;  // OFS
 
   /* 2-site Doublon-Holon */
   if(NDoublonHolon2siteIdx>0) {

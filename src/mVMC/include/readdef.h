@@ -34,7 +34,7 @@ static char cKWListOfFileNameList[][D_CharTmpReadDef]={
   "ModPara", "LocSpin",
   "Trans", "CoulombIntra", "CoulombInter",
   "Hund", "PairHop", "Exchange",
-  "Gutzwiller", "Jastrow", "SpinJastrow",
+  "Gutzwiller", "Jastrow", "SpinJastrow", "Jastrow3",
   "DH2", "DH4", 
   //RBM
   "ChargeRBM_HiddenLayer","ChargeRBM_PhysLayer", "ChargeRBM_PhysHidden",
@@ -43,7 +43,7 @@ static char cKWListOfFileNameList[][D_CharTmpReadDef]={
   //RBM
   "Orbital", "OrbitalAntiParallel",
   "OrbitalParallel", "OrbitalGeneral",
-  "TransSym", "InGutzwiller", "InJastrow", "InSpinJastrow",
+  "TransSym", "InGutzwiller", "InJastrow", "InSpinJastrow", "InJastrow3",
   "InDH2", "InDH4", 
   //RBM
   "InChargeRBM_HiddenLayer","InChargeRBM_PhysLayer", "InChargeRBM_PhysHidden",
@@ -51,7 +51,7 @@ static char cKWListOfFileNameList[][D_CharTmpReadDef]={
   "InGeneralRBM_HiddenLayer","InGeneralRBM_PhysLayer", "InGeneralRBM_PhysHidden",
   //RBM
   "InOrbital", "InOrbitalAntiParallel",
-	"InOrbitalParallel", "InOrbitalGeneral",
+  "InOrbitalParallel", "InOrbitalGeneral",
   "OneBodyG", "TwoBodyG", "TwoBodyGEx",
   "Lattice", "Twist",
   "InterAll", "OptTrans", "InOptTrans",
@@ -65,7 +65,7 @@ enum KWIdxInt{
   KWModPara, KWLocSpin,
   KWTrans, KWCoulombIntra,KWCoulombInter,
   KWHund, KWPairHop, KWExchange,
-  KWGutzwiller, KWJastrow, KWSpinJastrow,
+  KWGutzwiller, KWJastrow, KWSpinJastrow, KWJastrow3,
   KWDH2, KWDH4, 
   //RBM
   KWChargeRBM_HiddenLayer,KWChargeRBM_PhysLayer,KWChargeRBM_PhysHidden,
@@ -73,8 +73,8 @@ enum KWIdxInt{
   KWGeneralRBM_HiddenLayer,KWGeneralRBM_PhysLayer,KWGeneralRBM_PhysHidden,
   //RBM
   KWOrbital, KWOrbitalAntiParallel,
-	KWOrbitalParallel, KWOrbitalGeneral,
-  KWTransSym, KWInGutzwiller, KWInJastrow, KWInSpinJastrow,
+  KWOrbitalParallel, KWOrbitalGeneral,
+  KWTransSym, KWInGutzwiller, KWInJastrow, KWInSpinJastrow, KWInJastrow3,
   KWInDH2, KWInDH4, 
   //RBM
   KWInChargeRBM_HiddenLayer,KWInChargeRBM_PhysLayer,KWInChargeRBM_PhysHidden,
@@ -108,7 +108,7 @@ enum ParamIdxInt{
   IdxExUpdatePath, IdxRndSeed, IdxSplitSize,
   IdxNLocSpin,IdxNTrans,IdxNCoulombIntra,
   IdxNCoulombInter, IdxNHund, IdxNPairHop, 
-  IdxNExchange, IdxNGutz, IdxNJast, IdxNSpinJast,
+  IdxNExchange, IdxNGutz, IdxNJast, IdxNSpinJast, IdxNJast3,
   IdxNDH2, IdxNDH4, 
   //RBM
   IdxNChargeRBM_HiddenLayer,IdxNChargeRBM_PhysLayer, IdxNChargeRBM_PhysHidden,
@@ -145,6 +145,7 @@ int ReadInputParameters(char *xNameListFile, MPI_Comm comm);
 int iComplexFlgGutzwiller=0;
 int iComplexFlgJastrow=0;
 int iComplexFlgSpinJastrow=0;
+int iComplexFlgJastrow3=0;
 int iComplexFlgDH2=0;
 int iComplexFlgDH4=0;
 int iComplexFlgOrbital=0;

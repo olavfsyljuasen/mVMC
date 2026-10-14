@@ -65,12 +65,10 @@ int GetInfoGutzwiller(FILE *fp, int *ArrayIdx, int *ArrayOpt, int iComplxFlag, i
 int GetInfoJastrow(FILE *fp, int **ArrayIdx, int *ArrayOpt, int iComplxFlag, int *iOptCount, int fidx, int Nsite,
                    int NArray, char *defname);
 
-int
-GetInfoDH2(FILE *fp, int **ArrayIdx, int *ArrayOpt, int iComplxFlag, int *iOptCount, int _fidx, int Nsite, int NArray,
+int GetInfoDH2(FILE *fp, int **ArrayIdx, int *ArrayOpt, int iComplxFlag, int *iOptCount, int _fidx, int Nsite, int NArray,
            char *defname);
 
-int
-GetInfoDH4(FILE *fp, int **ArrayIdx, int *ArrayOpt, int iComplxFlag, int *iOptCount, int _fidx, int Nsite, int NArray,
+int GetInfoDH4(FILE *fp, int **ArrayIdx, int *ArrayOpt, int iComplxFlag, int *iOptCount, int _fidx, int Nsite, int NArray,
            char *defname);
 
 int GetInfoTransSym(FILE *fp, int **Array, int **ArraySgn, int **ArrayInv, double complex *ArrayPara, int _APFlag,
@@ -99,8 +97,7 @@ int GetInfoOrbitalGeneral(FILE *fp, int **Array, int *ArrayOpt, int **ArraySgn, 
                           int _fidx, int _iComplexFlag, int _iFlagOrbitalGeneral, int _APFlag, int Nsite, int NArray,
                           char *defname);
 
-int
-GetInfoOneBodyG(FILE *fp, int **ArrayIdx, int **ArrayToIdx, int _NLanczosMode, int Nsite, int NArray, char *defname);
+int GetInfoOneBodyG(FILE *fp, int **ArrayIdx, int **ArrayToIdx, int _NLanczosMode, int Nsite, int NArray, char *defname);
 
 //RBM
 int GetInfoRBM_Layer(FILE *fp, int *ArrayIdx, int *ArrayOpt, int iComplxFlag, int *iOptCount, int _fidx, int Nlayer, int NArray,
@@ -464,6 +461,10 @@ int ReadDefFileNInt(char *xNameListFile, MPI_Comm comm) {
             cerr = ReadBuffIntCmpFlg(fp, &bufInt[IdxNSpinJast], &iComplexFlgSpinJastrow);
             break;
 
+	  case KWJastrow3:
+            cerr = ReadBuffIntCmpFlg(fp, &bufInt[IdxNJast3], &iComplexFlgJastrow3);
+            break;
+
 //RBM
           case KWGeneralRBM_HiddenLayer:
             cerr = ReadBuffIntCmpFlg(fp, &bufInt[IdxNGeneralRBM_HiddenLayer], &iComplexFlgGeneralRBM_HiddenLayer);
@@ -763,8 +764,8 @@ int ReadDefFileNInt(char *xNameListFile, MPI_Comm comm) {
   }//rank 0
 
   if (rank == 0) {
-    AllComplexFlag = iComplexFlgGutzwiller + iComplexFlgJastrow + iComplexFlgSpinJastrow + iComplexFlgDH2; //TBC
-    AllComplexFlag += iComplexFlgDH4 + iComplexFlgOrbital;//TBC
+    AllComplexFlag = iComplexFlgGutzwiller + iComplexFlgJastrow + iComplexFlgSpinJastrow + iComplexFlgJastrow3; 
+    AllComplexFlag += iComplexFlgDH2 + iComplexFlgDH4 + iComplexFlgOrbital;//TBC  
     //AllComplexFlag  = 1;//DEBUG
     // AllComplexFlag= 0 -> All real, !=0 -> complex
     //if(AllComplexFlag == 0 && iFlgOrbitalGeneral == 1){
@@ -842,6 +843,7 @@ int ReadDefFileNInt(char *xNameListFile, MPI_Comm comm) {
     }
     MPI_Abort(comm, EXIT_FAILURE);
   }
+  NJastrow3Idx = bufInt[IdxNJast3];
   NDoublonHolon2siteIdx = bufInt[IdxNDH2];
   NDoublonHolon4siteIdx = bufInt[IdxNDH4];
   NOrbitalIdx = bufInt[IdxNOrbit];
@@ -978,7 +980,7 @@ int ReadDefFileNInt(char *xNameListFile, MPI_Comm comm) {
   Nsize = 2 * Ne;
   Nsite2 = 2 * Nsite;
   NSlater = NOrbitalIdx;
-  NProj = NGutzwillerIdx + NJastrowIdx + NSpinJastrowIdx
+  NProj = NGutzwillerIdx + NJastrowIdx + NSpinJastrowIdx + NJastrow3Idx
           + 2 * 3 * NDoublonHolon2siteIdx
           + 2 * 5 * NDoublonHolon4siteIdx;
   NOptTrans = (FlagOptTrans > 0) ? NQPOptTrans : 0;
@@ -1027,6 +1029,7 @@ int ReadDefFileNInt(char *xNameListFile, MPI_Comm comm) {
                  + Nsite /* GutzwillerIdx */
                  + Nsite * Nsite /* JastrowIdx */
                  + Nsite * Nsite /* SpinJastrowIdx */
+                 + Nsite * Nsite * Nsite /* Jastrow3Idx???? OFS */
                  + 2 * Nsite * NDoublonHolon2siteIdx /* DoublonHolon2siteIdx */
                  + 4 * Nsite * NDoublonHolon4siteIdx /* DoublonHolon4siteIdx */
                  //+ (2*Nsite)*(2*Nsite) /* OrbitalIdx */ //fsz
@@ -1111,63 +1114,72 @@ int ReadDefFileIdxPara(char *xNameListFile, MPI_Comm comm) {
         fclose(fp);
         continue;
       }
-
+      
       /*=======================================================================*/
       for (i = 0; i < IgnoreLinesInDef; i++) fgets(ctmp, sizeof(ctmp) / sizeof(char), fp);
       idx0 = 0;
-      switch (iKWidx) {
-        case KWLocSpin: /* Read locspn.def----------------------------------------*/
-          if (GetLocSpinInfo(fp, LocSpn, Nsite, defname) != 0) info = 1;
-          break;//locspn
-
-        case KWTrans: /* transfer.def--------------------------------------*/
-          if (GetTransferInfo(fp, Transfer, ParaTransfer, Nsite, NTransfer, defname) != 0) info = 1;
-          break;
-
-        case KWCoulombIntra: /*coulombintra.def----------------------------------*/
+      switch (iKWidx)
+	{
+	case KWLocSpin: /* Read locspn.def----------------------------------------*/
+	  if (GetLocSpinInfo(fp, LocSpn, Nsite, defname) != 0) info = 1;
+	  break;//locspn
+	  
+	case KWTrans: /* transfer.def--------------------------------------*/
+	  if (GetTransferInfo(fp, Transfer, ParaTransfer, Nsite, NTransfer, defname) != 0) info = 1;
+	  break;
+	  
+	case KWCoulombIntra: /*coulombintra.def----------------------------------*/
           if (GetInfoCoulombIntra(fp, CoulombIntra, ParaCoulombIntra, Nsite, NCoulombIntra, defname) != 0) info = 1;
           break;
-
+	  
         case KWCoulombInter: /*coulombinter.def----------------------------------*/
           if (ReadPairDValue(fp, CoulombInter, ParaCoulombInter, Nsite, NCoulombInter, defname) != 0) info = 1;
           break;
-
+	  
         case KWHund: /*hund.def------------------------------------------*/
           if (ReadPairDValue(fp, HundCoupling, ParaHundCoupling, Nsite, NHundCoupling, defname) != 0) info = 1;
           break;
-
+	  
         case KWExchange: /*exchange.def--------------------------------------*/
           if (ReadPairDValue(fp, ExchangeCoupling, ParaExchangeCoupling, Nsite, NExchangeCoupling, defname) != 0)
             info = 1;
           break;
-
+	  
         case KWPairHop: /*pairhop.def---------------------------------------*/
           if (ReadPairHopValue(fp, PairHopping, ParaPairHopping, Nsite, NPairHopping, defname) != 0) info = 1;
           break;
-
+	  
         case KWGutzwiller: /*gutzwilleridx.def---------------------------------*/
           if (GetInfoGutzwiller(fp, GutzwillerIdx, OptFlag, iComplexFlgGutzwiller, &count_idx, Nsite, NGutzwillerIdx,
                                 defname) != 0)
             info = 1;
           break;
-
+	  
         case KWJastrow:
           fidx = NGutzwillerIdx;
           if (GetInfoJastrow(fp, JastrowIdx, OptFlag, iComplexFlgJastrow, &count_idx, fidx, Nsite, NJastrowIdx,
                              defname) != 0)
             info = 1;
           break;
-
-        case KWSpinJastrow:
+	  
+	case KWSpinJastrow:
           fidx = NGutzwillerIdx + NJastrowIdx;
           if (GetInfoJastrow(fp, SpinJastrowIdx, OptFlag, iComplexFlgSpinJastrow, &count_idx, fidx, Nsite, NSpinJastrowIdx,
                              defname) != 0)
             info = 1;
           break;
+	  
+	case KWSJastrow3: 
+	  fidx = NGutzwillerIdx + NJastrowIdx + NSpinJastrowIdx;
+	  if (GetInfoJastrow3(fp, Jastrow3Idx, OptFlag, iComplexFlgJastrow3, &count_idx, fidx, Nsite, NJastrow3Idx,
+			      defname) != 0)
+	    info = 1;
+	  break;
 
+	  
         case KWDH2:
           /*doublonholon2siteidx.def--------------------------*/
-          fidx = NGutzwillerIdx + NJastrowIdx + NSpinJastrowIdx;
+          fidx = NGutzwillerIdx + NJastrowIdx + NSpinJastrowIdx + NJastrow3Idx;
           if (GetInfoDH2(fp, DoublonHolon2siteIdx, OptFlag, iComplexFlgDH2, &count_idx, fidx, Nsite,
                          NDoublonHolon2siteIdx, defname) != 0)
             info = 1;
@@ -1175,7 +1187,7 @@ int ReadDefFileIdxPara(char *xNameListFile, MPI_Comm comm) {
 
         case KWDH4:
           /*doublonholon4siteidx.def--------------------------*/
-          fidx = NGutzwillerIdx + NJastrowIdx + NSpinJastrowIdx + 2 * 3 * NDoublonHolon2siteIdx;
+          fidx = NGutzwillerIdx + NJastrowIdx + NSpinJastrowIdx + NJastrow3Idx + 2 * 3 * NDoublonHolon2siteIdx;
           if (GetInfoDH4(fp, DoublonHolon4siteIdx, OptFlag, iComplexFlgDH4, &count_idx, fidx, Nsite,
                          NDoublonHolon4siteIdx, defname) != 0)
             info = 1;
@@ -1553,13 +1565,62 @@ int ReadInputParameters(char *xNameListFile, MPI_Comm comm) {
           }
           break;
 
+
+      case KWInJastrow3:
+          fprintf(stdout, "Read InJastrow3 File. \n");
+          if (idx != NJastrow3Idx) {
+            info = 1;
+            break;
+          }
+          count = NGutzwillerIdx + NJastrowIdx + NSpinJastrowIdx;
+          if (NJastrow3Idx > 0) {
+            int *seen = (int *)calloc(NJastrowIdx, sizeof(int));
+            if (seen == NULL) {
+              fprintf(stderr, "Error: memory allocation failed in InJastrow3 parser.\n");
+              info = 1;
+              break;
+            }
+            for (i = 0; i < NJastrow3Idx; i++) {
+              if (fscanf(fp, "%d %lf %lf ", &idx, &tmp_real, &tmp_comp) != 3) {
+                fprintf(stderr, "Error in %s: invalid parameter row %d in InJastrow3.\n", defname, i + 1);
+                info = 1;
+                break;
+              }
+              if (idx < 0 || idx >= NJastrow3Idx) {
+                fprintf(stderr, "Error in %s: index %d out of range [0, %d) in InJastrow3.\n",
+                        defname, idx, NJastrow3Idx);
+                info = 1;
+                break;
+              }
+              if (seen[idx] != 0) {
+                fprintf(stderr, "Error in %s: duplicated index %d in InJastrow3.\n", defname, idx);
+                info = 1;
+                break;
+              }
+              seen[idx] = 1;
+              Proj[idx+count] = tmp_real + I * tmp_comp;
+            }
+            if (info == 0) {
+              for (i = 0; i < NJastrow3Idx; i++) {
+                if (seen[i] == 0) {
+                  fprintf(stderr, "Error in %s: missing index %d in InJastrow3.\n", defname, i);
+                  info = 1;
+                  break;
+                }
+              }
+            }
+            free(seen);
+            if (info != 0) break;
+          }
+          break;
+
         case KWInDH2:
           fprintf(stdout, "Read InDH2 File. \n");
           if (idx != NDoublonHolon2siteIdx) {
             info = 1;
             continue;
           }
-          count = NGutzwillerIdx + NJastrowIdx + NSpinJastrowIdx;
+          count = NGutzwillerIdx + NJastrowIdx + NSpinJastrowIdx + NJastrow3Idx;
           for (i = count; i < count + 2 * 3 * NDoublonHolon2siteIdx; i++) {
             fscanf(fp, "%d %lf %lf ", &idx, &tmp_real, &tmp_comp);
             Proj[idx+count] = tmp_real + I * tmp_comp;
@@ -1572,7 +1633,7 @@ int ReadInputParameters(char *xNameListFile, MPI_Comm comm) {
             info = 1;
             continue;
           }
-          count = NGutzwillerIdx + NJastrowIdx + NSpinJastrowIdx + 2 * 3 * NDoublonHolon2siteIdx;
+          count = NGutzwillerIdx + NJastrowIdx + NSpinJastrowIdx + NJastrow3Idx + 2 * 3 * NDoublonHolon2siteIdx;
           for (i = count; i < count + 2 * 5 * NDoublonHolon4siteIdx; i++) {
             fscanf(fp, "%d %lf %lf ", &idx, &tmp_real, &tmp_comp);
             Proj[idx+count] = tmp_real + I * tmp_comp;
@@ -2090,6 +2151,7 @@ void SetDefaultValuesModPara(int *bufInt, double *bufDouble) {
   bufInt[IdxNGutz] = 0;
   bufInt[IdxNJast] = 0;
   bufInt[IdxNSpinJast] = 0;
+  bufInt[IdxNJast3] = 0;
   bufInt[IdxNDH2] = 0;
   bufInt[IdxNDH4] = 0;
   bufInt[IdxNOrbit] = 0;
