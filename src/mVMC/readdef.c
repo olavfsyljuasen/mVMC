@@ -1029,7 +1029,7 @@ int ReadDefFileNInt(char *xNameListFile, MPI_Comm comm) {
                  + Nsite /* GutzwillerIdx */
                  + Nsite * Nsite /* JastrowIdx */
                  + Nsite * Nsite /* SpinJastrowIdx */
-                 + Nsite * Nsite * Nsite /* Jastrow3Idx???? OFS Is a dense array needed? */
+                 + 3 * NJastrow3Idx /* Jastrow3Idx, first all ri, then all rj, finally all rk. OFS */
                  + 2 * Nsite * NDoublonHolon2siteIdx /* DoublonHolon2siteIdx */
                  + 4 * Nsite * NDoublonHolon4siteIdx /* DoublonHolon4siteIdx */
                  //+ (2*Nsite)*(2*Nsite) /* OrbitalIdx */ //fsz
@@ -2647,6 +2647,8 @@ int GetInfoJastrow(FILE *fp, int **ArrayIdx, int *ArrayOpt, int iComplxFlag, int
   }
   return info;
 }
+
+
 
 int
 GetInfoDH2(FILE *fp, int **ArrayIdx, int *ArrayOpt, int iComplxFlag, int *iOptCount, int _fidx, int Nsite, int NArray,

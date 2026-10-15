@@ -106,26 +106,24 @@ void MakeProjCnt(int *projCnt, const int *eleNum) {
   }
 
    /* Jastrow3 factor exp(sum {v^_ijk * (ni-1) * (nj-1} * (nk-1)} */
-  if(NJastrow3Idx>0) {
-    offset = NGutzwillerIdx + NJastrowIdx + NSpinJastrowIdx;
-    for(ri=0;ri<nSite;ri++)
-      {
-	xi = n0[ri]+n1[ri]-1; 
-	if(xi==0) continue;
-	for(rj=ri+1;rj<nSite;rj++)
-	  {
-	    xj = n0[rj]+n1[rj]-1;
-	    if(xj==0) continue;
-	    for(rk=rj+1;rk<nSite;rk++)
-	      {
-		xk = n0[rk]+n1[rk]-1;
-		if(xk==0) continue;
-		idx = offset + Jastrow3Idx[ri][rj][rk];
-		projCnt[idx] += xi*xj*xk;
-	      }
-	  }
-      }
-
+  if(NJastrow3Idx>0)
+    {
+      offset = NGutzwillerIdx + NJastrowIdx + NSpinJastrowIdx;
+      for(int i=0; i<NJastrow3Idx; i++)
+	{
+	  int si=Jastrow3Idx[i + 0*NJastrow3Idx];
+	  int sj=Jastrow3Idx[i + 1*NJastrow3Idx];
+	  int sk=Jastrow3Idx[i + 2*NJastrow3Idx];
+	  
+	  xi = n0[si]+n1[si]-1;
+	  xj = n0[sj]+n1[sj]-1;
+	  xk = n0[sk]+n1[sk]-1; 
+	  	  
+	  idx = offset + i;
+	  projCnt[idx] += xi*xj*xk;		  
+	}
+    }
+  
   /* 2-site doublon-holon correlation factor */
   if(NDoublonHolon2siteIdx>0) {
     offset = NGutzwillerIdx + NJastrowIdx + NSpinJastrowIdx + NJastrow3Idx;
@@ -289,43 +287,19 @@ void UpdateProjCnt(const int ri, const int rj, const int s,
   }
 
   /* Jastrow3: eleNum is already updated, n0 and n1 refers to new state (ri emptied, rj filled) */
-  // requires careful check OFS
-  if(NJastrow3Idx>0){
-    offset = NGutzwillerIdx + NJastrowIdx + NSpinJastrowIdx;
-    /* update [ri][rj][rk] */
-    if(ri<rj) idx = offset + Jastrow3Idx[ri][rj][rk];  // OFS ???
-    else  idx = offset + Jastrow3Idx[rj][ri];
-    projCntNew[idx] += n0[ri]+n1[ri]-n0[rj]-n1[rj]+1;
-    /* update [ri][rk] (rk != ri, rj) */
-    for(rk=0;rk<nSite;rk++) {
-      if(rk==rj) continue;
-      if(rk==ri) continue;
-      if(rk>ri) idx = offset + Jastrow3Idx[ri][rk];
-      else idx = offset + Jastrow3Idx[rk][ri]; 
-      projCntNew[idx] -= n0[rk]+n1[rk]-1;
-    }
-    /* update [rj][rk] (rk != ri, rj) */
-    for(rk=0;rk<nSite;rk++) {
-      if(rk==ri) continue;
-      if(rk==rj) continue;
-      if(rk>rj) idx = offset + Jastrow3Idx[rj][rk];
-      else idx = offset + Jastrow3Idx[rk][rj]; 
-      projCntNew[idx] += n0[rk]+n1[rk]-1;
-    }
-  }
-  // go thru the Jastrow3Idx and update, instead of Nsite^3 scaling
+  // only go thru terms contained in Jastrow3Idx
   if(NJastrow3Idx>0)
     {
       offset = NGutzwillerIdx + NJastrowIdx + NSpinJastrowIdx;
       for(int i=0; i<NJastrow3Idx; i++)
 	{
-	  int s1 = siteJ3_1[Jastrow3Idx[i]];
-	  int s2 = siteJ3_2[Jastrow3Idx[i]];
-	  int s3 = siteJ3_2[Jastrow3Idx[i]];
+	  int s1 = Jastrow3Idx[i + 0*NJastrow3Idx];
+	  int s2 = Jastrow3Idx[i + 1*NJastrow3Idx];
+	  int s3 = Jastrow3Idx[i + 2*NJastrow3Idx];
 
 	  if( ri==s1 || ri==s2 || ri==s3 || rj==s1 || rj==s2 || rj==s3 )// update needed
 	    {
-	      int ns1= n0[s1]+n1[s1];  // new n at s1
+	      int ns1= n0[s1]+n1[s1];                           // new n at s1
 	      int os1= ( s1==ri ? ns1+1: s1==rj ? ns1-1 : ns1); // old n at s1 
 
 	      int ns2= n0[s2]+n1[s2];
@@ -334,15 +308,13 @@ void UpdateProjCnt(const int ri, const int rj, const int s,
 	      int ns3= n0[s2]+n1[s2];
 	      int os3= ( s3==ri ? ns3+1: s3==rj ? ns3-1 : ns3);
 
-	      idx = offset + Jastrow3Idx[i];
+	      idx = offset + i;
 
 	      projCntNew[idx] += (ns1-1)*(ns2-1)*(ns3-1)-(os1-1)*(os2-1)*(os3-1);	
 	    }
 	}
     }
 
-
-  
   
   if(NDoublonHolon2siteIdx==0 && NDoublonHolon4siteIdx==0) return;
 
@@ -494,33 +466,37 @@ void UpdateProjCnt_fsz(const int ri, const int rj, const int s,const int t,
     }
   }
 
-  // again this must be carefully checked OFS. Jastrow3Idx should have 3 arguments
+  /* Jastrow3: eleNum is already updated, n0 and n1 refers to new state (ri emptied, rj filled) */
+  // only go thru terms contained in Jastrow3Idx
   if(NJastrow3Idx>0)
     {
       offset = NGutzwillerIdx + NJastrowIdx + NSpinJastrowIdx;
-      /* update [ri][rj] */
-      if(ri<rj) idx = offset + Jastrow3Idx[ri][rj];
-      else  idx = offset + Jastrow3Idx[rj][ri];
-      projCntNew[idx] += n0[ri]+n1[ri]-n0[rj]-n1[rj]+1;
-      /* update [ri][rk] (rk != ri, rj) */
-      for(rk=0;rk<nSite;rk++)
+      for(int i=0; i<NJastrow3Idx; i++)
 	{
-	  if(rk==rj) continue;
-	  if(rk==ri) continue;
-	  if(rk>ri) idx = offset + Jastrow3Idx[ri][rk];
-	  else idx = offset + Jastrow3Idx[rk][ri]; 
-	  projCntNew[idx] -= n0[rk]+n1[rk]-1;
-	}
-      /* update [rj][rk] (rk != ri, rj) */
-      for(rk=0;rk<nSite;rk++)
-	{
-	  if(rk==ri) continue;
-	  if(rk==rj) continue;
-	  if(rk>rj) idx = offset + Jastrow3Idx[rj][rk];
-	  else idx = offset + Jastrow3Idx[rk][rj]; 
-	  projCntNew[idx] += n0[rk]+n1[rk]-1;
+	  int s1 = Jastrow3Idx[i + 0*NJastrow3Idx];
+	  int s2 = Jastrow3Idx[i + 1*NJastrow3Idx];
+	  int s3 = Jastrow3Idx[i + 2*NJastrow3Idx];
+
+	  if( ri==s1 || ri==s2 || ri==s3 || rj==s1 || rj==s2 || rj==s3 )// update needed
+	    {
+	      int ns1= n0[s1]+n1[s1];                           // new n at s1
+	      int os1= ( s1==ri ? ns1+1: s1==rj ? ns1-1 : ns1); // old n at s1 
+
+	      int ns2= n0[s2]+n1[s2];
+	      int os2= ( s2==ri ? ns2+1: s2==rj ? ns2-1 : ns2);
+
+	      int ns3= n0[s2]+n1[s2];
+	      int os3= ( s3==ri ? ns3+1: s3==rj ? ns3-1 : ns3);
+
+	      idx = offset + i;
+
+	      projCntNew[idx] += (ns1-1)*(ns2-1)*(ns3-1)-(os1-1)*(os2-1)*(os3-1);	
+	    }
 	}
     }
+
+  
+
 
   if(NDoublonHolon2siteIdx==0 && NDoublonHolon4siteIdx==0) return;
 
