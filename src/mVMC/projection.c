@@ -105,7 +105,7 @@ void MakeProjCnt(int *projCnt, const int *eleNum) {
     }
   }
 
-    /* Jastrow3 factor exp(sum {v^_ijk * (ni-1) * (nj-1} * (nk-1)} */
+   /* Jastrow3 factor exp(sum {v^_ijk * (ni-1) * (nj-1} * (nk-1)} */
   if(NJastrow3Idx>0) {
     offset = NGutzwillerIdx + NJastrowIdx + NSpinJastrowIdx;
     for(ri=0;ri<nSite;ri++)
@@ -237,6 +237,33 @@ void UpdateProjCnt(const int ri, const int rj, const int s,
     }
   }
 
+  // go thru the JastrowIdx and update, instead of Nsite^2 scaling
+  /*
+  if(NJastrowIdx>0)
+    {
+      offset = NGutzwillerIdx;
+      for(int i=0; i<NJastrowIdx; i++)
+	{
+	  int s1 = siteJ3_1[JastrowIdx[i]];
+	  int s2 = siteJ3_2[JastrowIdx[i]];
+
+	  if( ri==s1 || ri==s2 || rj==s1 || rj==s2 )// update needed
+	    {
+	      int ns1= n0[s1]+n1[s1];  // new n at s1
+	      int os1= ( s1==ri ? ns1+1: s1==rj ? ns1-1 : ns1); // old n at s1 
+
+	      int ns2= n0[s2]+n1[s2];
+	      int os2= ( s2==ri ? ns2+1: s2==rj ? ns2-1 : ns2);
+
+	      idx = offset + Jastrow2Idx[i];
+
+	      projCntNew[idx] += (ns1-1)*(ns2-1)-(os1-1)*(os2-1);	
+	    }
+	}
+    }
+  */
+
+  
   /* Spin Jastrow: eleNum is already updated (ri emptied, rj filled) */
   if(NSpinJastrowIdx>0){
     offset = NGutzwillerIdx + NJastrowIdx;
@@ -261,12 +288,12 @@ void UpdateProjCnt(const int ri, const int rj, const int s,
     }
   }
 
-
-  // requires careful check OFS : maybe Jastrow3Idx is stored such that ri < rj < rk
+  /* Jastrow3: eleNum is already updated, n0 and n1 refers to new state (ri emptied, rj filled) */
+  // requires careful check OFS
   if(NJastrow3Idx>0){
     offset = NGutzwillerIdx + NJastrowIdx + NSpinJastrowIdx;
     /* update [ri][rj][rk] */
-    if(ri<rj) idx = offset + Jastrow3Idx[ri][rj];  // OFS ???
+    if(ri<rj) idx = offset + Jastrow3Idx[ri][rj][rk];  // OFS ???
     else  idx = offset + Jastrow3Idx[rj][ri];
     projCntNew[idx] += n0[ri]+n1[ri]-n0[rj]-n1[rj]+1;
     /* update [ri][rk] (rk != ri, rj) */
@@ -286,8 +313,36 @@ void UpdateProjCnt(const int ri, const int rj, const int s,
       projCntNew[idx] += n0[rk]+n1[rk]-1;
     }
   }
+  // go thru the Jastrow3Idx and update, instead of Nsite^3 scaling
+  if(NJastrow3Idx>0)
+    {
+      offset = NGutzwillerIdx + NJastrowIdx + NSpinJastrowIdx;
+      for(int i=0; i<NJastrow3Idx; i++)
+	{
+	  int s1 = siteJ3_1[Jastrow3Idx[i]];
+	  int s2 = siteJ3_2[Jastrow3Idx[i]];
+	  int s3 = siteJ3_2[Jastrow3Idx[i]];
+
+	  if( ri==s1 || ri==s2 || ri==s3 || rj==s1 || rj==s2 || rj==s3 )// update needed
+	    {
+	      int ns1= n0[s1]+n1[s1];  // new n at s1
+	      int os1= ( s1==ri ? ns1+1: s1==rj ? ns1-1 : ns1); // old n at s1 
+
+	      int ns2= n0[s2]+n1[s2];
+	      int os2= ( s2==ri ? ns2+1: s2==rj ? ns2-1 : ns2);
+
+	      int ns3= n0[s2]+n1[s2];
+	      int os3= ( s3==ri ? ns3+1: s3==rj ? ns3-1 : ns3);
+
+	      idx = offset + Jastrow3Idx[i];
+
+	      projCntNew[idx] += (ns1-1)*(ns2-1)*(ns3-1)-(os1-1)*(os2-1)*(os3-1);	
+	    }
+	}
+    }
 
 
+  
   
   if(NDoublonHolon2siteIdx==0 && NDoublonHolon4siteIdx==0) return;
 
