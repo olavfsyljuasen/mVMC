@@ -93,7 +93,7 @@ void SetMemoryDef() {
 
   //Jastrow3Idx OFS
   Jastrow3Idx = pInt;
-  pInt += 3*NJastrow3Idx; // all ri stored in the first NJastrow3Idx, then all rj and finally all rk.
+  pInt += 4*NJastrow3Lines; // all n indices stored in the first NJastrow3Lines, then all ri, then all rj and all rk.
 
   
   DoublonHolon2siteIdx = (int**)malloc(sizeof(int*)*NDoublonHolon2siteIdx);

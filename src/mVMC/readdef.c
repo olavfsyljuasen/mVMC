@@ -65,6 +65,9 @@ int GetInfoGutzwiller(FILE *fp, int *ArrayIdx, int *ArrayOpt, int iComplxFlag, i
 int GetInfoJastrow(FILE *fp, int **ArrayIdx, int *ArrayOpt, int iComplxFlag, int *iOptCount, int fidx, int Nsite,
                    int NArray, char *defname);
 
+int GetInfoJastrow3(FILE *fp, int *ArrayIdx, int *ArrayOpt, int iComplxFlag, int *iOptCount, int fidx, int Nsite,
+                   int NArray, char *defname);
+
 int GetInfoDH2(FILE *fp, int **ArrayIdx, int *ArrayOpt, int iComplxFlag, int *iOptCount, int _fidx, int Nsite, int NArray,
            char *defname);
 
@@ -1029,7 +1032,7 @@ int ReadDefFileNInt(char *xNameListFile, MPI_Comm comm) {
                  + Nsite /* GutzwillerIdx */
                  + Nsite * Nsite /* JastrowIdx */
                  + Nsite * Nsite /* SpinJastrowIdx */
-                 + 3 * NJastrow3Idx /* Jastrow3Idx, first all ri, then all rj, finally all rk. OFS */
+                 + 4 * NJastrow3Lines /* Jastrow3Idx, first all n, then all ri, all rj, finally all rk. OFS */
                  + 2 * Nsite * NDoublonHolon2siteIdx /* DoublonHolon2siteIdx */
                  + 4 * Nsite * NDoublonHolon4siteIdx /* DoublonHolon4siteIdx */
                  //+ (2*Nsite)*(2*Nsite) /* OrbitalIdx */ //fsz
@@ -2643,6 +2646,84 @@ int GetInfoJastrow(FILE *fp, int **ArrayIdx, int *ArrayOpt, int iComplxFlag, int
     if (info != 0 || idx0 != idxExpected || idx1 != NArray) {
       info = ReadDefFileError(defname);
     }
+    free(pairClass);
+  }
+  return info;
+}
+
+
+int GetInfoJastrow3(FILE *fp, int *ArrayIdx, int *ArrayOpt, int iComplxFlag, int *iOptCount, int _fidx, int Nsite,
+                   int NArray, char *defname) {
+  int idx0 = 0, info = 0;
+  int i = 0, j = 0, k = 0, n = 0;
+  int a = 0 ;
+  int line = 0;
+  int idxMax = Nsite * (Nsite - 1) * (Nsite - 2);
+
+  int fidx = _fidx;
+
+  int triplets[Nsite][Nsite][NSite];
+  
+    for(i = 0; i < Nsite; i++)
+      for(j = 0; j < Nsite; j++)
+	for(k = 0; k < Nsite; k++)
+	  triplets[i][j][k] = -2;
+	  
+
+    while (idx0 < idxMax) {
+      if (fscanf(fp, "%d %d %d %d", &i, &j, &k, &n) != 4) {
+        fprintf(stderr, "Error in %s: failed to read Jastrow3 row %d.\n", defname, line + 1);
+        info = 1;
+        break;
+      }
+      line++;
+
+      // sort i,j,k by permutations so that i<j<k
+      if( i > j ){a=j; j=i; i=a;}
+      if( j > k ){a=k; k=j; j=a;}
+      if( i > j ){a=j; j=i; i=a;}
+            
+      if (i == j || i == k || j == k) {
+        fprintf(stderr, "Error in %s: [Condition] two sites equal at row %d.\n", defname, line);
+        info = 1;
+        break;
+      }
+      if (CheckSite(i, Nsite) != 0 || CheckSite(j, Nsite) != 0 || CheckSite(k, Nsite) != 0 ){
+        fprintf(stderr, "Error in %s: Site index is incorrect at row %d.\n", defname, line);
+        info = 1;
+        break;
+      }
+      if (n < 0 || n >= NArray) {
+        fprintf(stderr, "Error in %s: class index %d out of range [0, %d) at row %d.\n",
+                defname, n, NArray, line);
+        info = 1;
+        break;
+      }
+      if (triplets[i][j][k] != -2 ) {
+        fprintf(stderr, "Error in %s: duplicated triplet (%d,%d,%d) at row %d.\n", defname, i, j, k, line);
+        info = 1;
+        break;
+      }
+
+      triplets[i][j][k] = n;
+      
+      ArrayIdx[idx0 + 0*NArray] = n;
+      ArrayIdx[idx0 + 1*NArray] = i;
+      ArrayIdx[idx0 + 2*NArray] = j;
+      ArrayIdx[idx0 + 3*NArray] = k;
+      
+      idx0++;
+    }
+
+    if (info == 0)
+      {
+	idx1 = GetInfoOpt(fp, ArrayOpt, iComplxFlag, iOptCount, fidx);
+      }
+    
+    if (info != 0 || idx0 != idxExpected || idx1 != NArray)
+      {
+	info = ReadDefFileError(defname);
+      }
     free(pairClass);
   }
   return info;
