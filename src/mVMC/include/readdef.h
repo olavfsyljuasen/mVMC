@@ -108,7 +108,7 @@ enum ParamIdxInt{
   IdxExUpdatePath, IdxRndSeed, IdxSplitSize,
   IdxNLocSpin,IdxNTrans,IdxNCoulombIntra,
   IdxNCoulombInter, IdxNHund, IdxNPairHop, 
-  IdxNExchange, IdxNGutz, IdxNJast, IdxNSpinJast, IdxNJast3,
+  IdxNExchange, IdxNGutz, IdxNJast, IdxNSpinJast, IdxNJast3,IdxNJast3Triplets,
   IdxNDH2, IdxNDH4, 
   //RBM
   IdxNChargeRBM_HiddenLayer,IdxNChargeRBM_PhysLayer, IdxNChargeRBM_PhysHidden,

@@ -126,7 +126,7 @@ double complex*ParaInterAll;
 int NGutzwillerIdx, *GutzwillerIdx; /* [Nsite] */
 int NJastrowIdx, **JastrowIdx; /* [Nsite][Nsite] */
 int NSpinJastrowIdx, **SpinJastrowIdx; /* [Nsite][Nsite] */
-int NJastrow3Idx, NJastrow3Lines, *Jastrow3Idx; /* [4*NJastrow3Lines] */
+int NJastrow3Idx, NJastrow3Triplets, *Jastrow3Idx; /* [4*NJastrow3Triplets] */
 int NDoublonHolon2siteIdx, **DoublonHolon2siteIdx; /* DoublonHolon2siteIdx[idx][2*Nsite] */
 int NDoublonHolon4siteIdx, **DoublonHolon4siteIdx; /* DoublonHolon4siteIdx[idx][4*Nsite] */
 int NOrbitalIdx, **OrbitalIdx; /* [Nsite][Nsite] */

@@ -65,8 +65,7 @@ int GetInfoGutzwiller(FILE *fp, int *ArrayIdx, int *ArrayOpt, int iComplxFlag, i
 int GetInfoJastrow(FILE *fp, int **ArrayIdx, int *ArrayOpt, int iComplxFlag, int *iOptCount, int fidx, int Nsite,
                    int NArray, char *defname);
 
-int GetInfoJastrow3(FILE *fp, int *ArrayIdx, int *ArrayOpt, int iComplxFlag, int *iOptCount, int fidx, int Nsite,
-                   int NArray, char *defname);
+int GetInfoJastrow3(FILE *fp, int *ArrayIdx, int *ArrayOpt, int iComplxFlag, int *iOptCount, int fidx, int Nsite, int NJastrow3Idx, int NJastrow3Triplets, char *defname);
 
 int GetInfoDH2(FILE *fp, int **ArrayIdx, int *ArrayOpt, int iComplxFlag, int *iOptCount, int _fidx, int Nsite, int NArray,
            char *defname);
@@ -147,6 +146,40 @@ char *ReadBuffIntCmpFlg(FILE *fp, int *iNbuf, int *iComplexFlag) {
     }
   }
   return cerr;
+}
+
+char ReadBuffJastrow3(FILE *fp, int *nIdx, int *nTriplets, int *complexFlag);
+
+char ReadBuffJastrow3(FILE *fp,int *nIdx,int *nTriplets, int *complexFlag)
+{
+    char ctmp[DFileNameMax];
+    char key[DFileNameMax];
+
+    if (fgets(ctmp, sizeof ctmp, fp) == NULL) {
+        return 0;
+    }
+
+    if (fgets(ctmp, sizeof ctmp, fp) == NULL ||
+        sscanf(ctmp, "%s %d", key, nIdx) != 2 ||
+        strcmp(key, "NJastrow3Idx") != 0 ||
+        *nIdx < 0) {
+        return 0;
+    }
+
+    if (fgets(ctmp, sizeof ctmp, fp) == NULL ||
+        sscanf(ctmp, "%s %d", key, nTriplets) != 2 ||
+        strcmp(key, "NJastrow3Triplets") != 0 ||
+        *nTriplets < 0) {
+        return 0;
+    }
+
+    if (fgets(ctmp, sizeof ctmp, fp) == NULL ||
+        sscanf(ctmp, "%s %d", key, complexFlag) != 2 ||
+        strcmp(key, "ComplexType") != 0 ||
+        (*complexFlag != 0 && *complexFlag != 1)) {
+        return 0;
+    }
+    return 1;
 }
 
 void SetDefaultValuesModPara(int *buf, double *bufDouble);
@@ -465,7 +498,7 @@ int ReadDefFileNInt(char *xNameListFile, MPI_Comm comm) {
             break;
 
 	  case KWJastrow3:
-            cerr = ReadBuffIntCmpFlg(fp, &bufInt[IdxNJast3], &iComplexFlgJastrow3);
+            cerr = ReadBuffJastrow3(fp, &bufInt[IdxNJast3], &bufInt[IdxNJast3Triplets],&iComplexFlgJastrow3);
             break;
 
 //RBM
@@ -847,6 +880,7 @@ int ReadDefFileNInt(char *xNameListFile, MPI_Comm comm) {
     MPI_Abort(comm, EXIT_FAILURE);
   }
   NJastrow3Idx = bufInt[IdxNJast3];
+  NJastrow3Triplets = bufInt[IdxNJast3Triplets];
   NDoublonHolon2siteIdx = bufInt[IdxNDH2];
   NDoublonHolon4siteIdx = bufInt[IdxNDH4];
   NOrbitalIdx = bufInt[IdxNOrbit];
@@ -1032,7 +1066,7 @@ int ReadDefFileNInt(char *xNameListFile, MPI_Comm comm) {
                  + Nsite /* GutzwillerIdx */
                  + Nsite * Nsite /* JastrowIdx */
                  + Nsite * Nsite /* SpinJastrowIdx */
-                 + 4 * NJastrow3Lines /* Jastrow3Idx, first all n, then all ri, all rj, finally all rk. OFS */
+                 + 4 * NJastrow3Triplets /* Jastrow3Idx, first all n, then all ri, all rj, finally all rk. OFS */
                  + 2 * Nsite * NDoublonHolon2siteIdx /* DoublonHolon2siteIdx */
                  + 4 * Nsite * NDoublonHolon4siteIdx /* DoublonHolon4siteIdx */
                  //+ (2*Nsite)*(2*Nsite) /* OrbitalIdx */ //fsz
@@ -1172,9 +1206,9 @@ int ReadDefFileIdxPara(char *xNameListFile, MPI_Comm comm) {
             info = 1;
           break;
 	  
-	case KWSJastrow3: 
+	case KWJastrow3: 
 	  fidx = NGutzwillerIdx + NJastrowIdx + NSpinJastrowIdx;
-	  if (GetInfoJastrow3(fp, Jastrow3Idx, OptFlag, iComplexFlgJastrow3, &count_idx, fidx, Nsite, NJastrow3Idx,
+	  if (GetInfoJastrow3(fp, Jastrow3Idx, OptFlag, iComplexFlgJastrow3, &count_idx, fidx, Nsite, NJastrow3Idx, NJastrow3Triplets,
 			      defname) != 0)
 	    info = 1;
 	  break;
@@ -2652,80 +2686,108 @@ int GetInfoJastrow(FILE *fp, int **ArrayIdx, int *ArrayOpt, int iComplxFlag, int
 }
 
 
-int GetInfoJastrow3(FILE *fp, int *ArrayIdx, int *ArrayOpt, int iComplxFlag, int *iOptCount, int _fidx, int Nsite,
-                   int NArray, char *defname) {
+int GetInfoJastrow3(FILE *fp, int *ArrayIdx, int *ArrayOpt, int iComplxFlag, int *iOptCount, int fidx, int Nsite,
+		    int NArray, int Ntriplets, char *defname)
+{
   int idx0 = 0, info = 0;
   int i = 0, j = 0, k = 0, n = 0;
-  int a = 0 ;
+  int tmp = 0 ;
   int line = 0;
-  int idxMax = Nsite * (Nsite - 1) * (Nsite - 2);
-
-  int fidx = _fidx;
-
-  int triplets[Nsite][Nsite][NSite];
   
-    for(i = 0; i < Nsite; i++)
-      for(j = 0; j < Nsite; j++)
-	for(k = 0; k < Nsite; k++)
-	  triplets[i][j][k] = -2;
-	  
-
-    while (idx0 < idxMax) {
-      if (fscanf(fp, "%d %d %d %d", &i, &j, &k, &n) != 4) {
-        fprintf(stderr, "Error in %s: failed to read Jastrow3 row %d.\n", defname, line + 1);
-        info = 1;
-        break;
-      }
+  
+  
+  if (NArray < 0 || Ntriplets < 0)
+    {
+      fprintf(stderr, "Error in %s: Jastrow3 counts must be non-negative.\n",
+	      defname);
+      info = 1;
+    }
+  
+  if ((NArray == 0) != (Ntriplets == 0))
+    {
+      fprintf(stderr,
+	      "Error in %s: NJastrow3Idx and NJastrow3Triplets must both "
+	      "be zero or both be positive.\n", defname);
+      info = 1;
+    }
+  
+  
+    
+  i=0; j=0; k=0;
+  
+  while (idx0 < Ntriplets )
+    {
+      if (fscanf(fp, "%d %d %d %d", &i, &j, &k, &n) != 4)
+	{
+	  fprintf(stderr, "Error in %s: failed to read Jastrow3 row %d.\n", defname, line + 1);
+	  info = 1;
+	  break;
+	}
       line++;
-
+    
       // sort i,j,k by permutations so that i<j<k
-      if( i > j ){a=j; j=i; i=a;}
-      if( j > k ){a=k; k=j; j=a;}
-      if( i > j ){a=j; j=i; i=a;}
-            
-      if (i == j || i == k || j == k) {
-        fprintf(stderr, "Error in %s: [Condition] two sites equal at row %d.\n", defname, line);
-        info = 1;
-        break;
-      }
-      if (CheckSite(i, Nsite) != 0 || CheckSite(j, Nsite) != 0 || CheckSite(k, Nsite) != 0 ){
-        fprintf(stderr, "Error in %s: Site index is incorrect at row %d.\n", defname, line);
-        info = 1;
-        break;
-      }
-      if (n < 0 || n >= NArray) {
-        fprintf(stderr, "Error in %s: class index %d out of range [0, %d) at row %d.\n",
-                defname, n, NArray, line);
-        info = 1;
-        break;
-      }
-      if (triplets[i][j][k] != -2 ) {
-        fprintf(stderr, "Error in %s: duplicated triplet (%d,%d,%d) at row %d.\n", defname, i, j, k, line);
-        info = 1;
-        break;
-      }
-
-      triplets[i][j][k] = n;
+      if( i > j ){tmp=j; j=i; i=tmp;}
+      if( j > k ){tmp=k; k=j; j=tmp;}
+      if( i > j ){tmp=j; j=i; i=rmp;}
       
-      ArrayIdx[idx0 + 0*NArray] = n;
-      ArrayIdx[idx0 + 1*NArray] = i;
-      ArrayIdx[idx0 + 2*NArray] = j;
-      ArrayIdx[idx0 + 3*NArray] = k;
+      if (i == j || i == k || j == k)
+	{
+	  fprintf(stderr, "Error in %s: [Condition] two sites equal at row %d.\n", defname, line);
+	  info = 1;
+	  break;
+	}
+      if (CheckSite(i, Nsite) != 0 || CheckSite(j, Nsite) != 0 || CheckSite(k, Nsite) != 0 )
+	{
+	  fprintf(stderr, "Error in %s: Site index is incorrect at row %d.\n", defname, line);
+	  info = 1;
+	  break;
+	}
+      if (n < 0 || n >= NArray)
+	{
+	  fprintf(stderr, "Error in %s: class index %d out of range [0, %d) at row %d.\n",
+		  defname, n, NArray, line);
+	  info = 1;
+	  break;
+	}
+    
+      for (int p = 0; p < idx0; ++p)
+	{
+	  if (ArrayIdx[p + 1*Ntriplets]   == i &&
+	      ArrayIdx[p + 2*Ntriplets]   == j &&
+	      ArrayIdx[p + 3*Ntriplets]   == k)
+	    {
+	      fprintf(stderr,
+		      "Error in %s: duplicated triplet %d %d %d at row %d.\n",
+		      defname, i, j, k, line);
+	      return 1;
+	    }
+	}
+    
+      ArrayIdx[idx0 + 0*Ntriplets] = n;
+      ArrayIdx[idx0 + 1*Ntriplets] = i;
+      ArrayIdx[idx0 + 2*Ntriplets] = j;
+      ArrayIdx[idx0 + 3*Ntriplets] = k;
       
       idx0++;
     }
-
-    if (info == 0)
-      {
-	idx1 = GetInfoOpt(fp, ArrayOpt, iComplxFlag, iOptCount, fidx);
-      }
-    
-    if (info != 0 || idx0 != idxExpected || idx1 != NArray)
-      {
-	info = ReadDefFileError(defname);
-      }
-    free(pairClass);
-  }
+  
+  if (idx0 != Ntriplets )
+    {
+      fprintf(stderr, "Error in %s: expected %d Jastrow3 triplets, read %d.\n", defname, Ntriplets, idx0);
+      info = 1;
+      break;
+    }
+  
+  
+  if (info == 0)
+    {
+      idx1 = GetInfoOpt(fp, ArrayOpt, iComplxFlag, iOptCount, fidx);
+    }
+  
+  if (info != 0 || idx1 != NArray)
+    {
+      info = ReadDefFileError(defname);
+    }
   return info;
 }
 

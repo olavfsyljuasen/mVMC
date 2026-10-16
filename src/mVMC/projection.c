@@ -109,13 +109,13 @@ void MakeProjCnt(int *projCnt, const int *eleNum) {
   if(NJastrow3Idx>0)
     {
       offset = NGutzwillerIdx + NJastrowIdx + NSpinJastrowIdx;
-      for(int i=0; i<NJastrow3Lines; i++)
+      for(int i=0; i<NJastrow3Triplets; i++)
 	{
-	  int n =Jastrow3Idx[i + 0*NJastrow3Lines];
-	  int si=Jastrow3Idx[i + 1*NJastrow3Lines];
-	  int sj=Jastrow3Idx[i + 2*NJastrow3Lines];
-	  int sk=Jastrow3Idx[i + 3*NJastrow3Lines];
-	  
+	  int n =Jastrow3Idx[i + 0*NJastrow3Triplets];
+	  int si=Jastrow3Idx[i + 1*NJastrow3Triplets];
+	  int sj=Jastrow3Idx[i + 2*NJastrow3Triplets];
+	  int sk=Jastrow3Idx[i + 3*NJastrow3Triplets];
+
 	  xi = n0[si]+n1[si]-1;
 	  xj = n0[sj]+n1[sj]-1;
 	  xk = n0[sk]+n1[sk]-1; 
@@ -236,32 +236,6 @@ void UpdateProjCnt(const int ri, const int rj, const int s,
     }
   }
 
-  // go thru the JastrowIdx and update, instead of Nsite^2 scaling
-  /*
-  if(NJastrowIdx>0)
-    {
-      offset = NGutzwillerIdx;
-      for(int i=0; i<NJastrowIdx; i++)
-	{
-	  int s1 = siteJ3_1[JastrowIdx[i]];
-	  int s2 = siteJ3_2[JastrowIdx[i]];
-
-	  if( ri==s1 || ri==s2 || rj==s1 || rj==s2 )// update needed
-	    {
-	      int ns1= n0[s1]+n1[s1];  // new n at s1
-	      int os1= ( s1==ri ? ns1+1: s1==rj ? ns1-1 : ns1); // old n at s1 
-
-	      int ns2= n0[s2]+n1[s2];
-	      int os2= ( s2==ri ? ns2+1: s2==rj ? ns2-1 : ns2);
-
-	      idx = offset + Jastrow2Idx[i];
-
-	      projCntNew[idx] += (ns1-1)*(ns2-1)-(os1-1)*(os2-1);	
-	    }
-	}
-    }
-  */
-
   
   /* Spin Jastrow: eleNum is already updated (ri emptied, rj filled) */
   if(NSpinJastrowIdx>0){
@@ -292,12 +266,12 @@ void UpdateProjCnt(const int ri, const int rj, const int s,
   if(NJastrow3Idx>0)
     {
       offset = NGutzwillerIdx + NJastrowIdx + NSpinJastrowIdx;
-      for(int i=0; i<NJastrow3Lines; i++)
+      for(int i=0; i<NJastrow3Triplets; i++)
 	{
-	  int n  = Jastrow3Idx[i + 0*NJastrow3Lines];
-	  int s1 = Jastrow3Idx[i + 1*NJastrow3Lines];
-	  int s2 = Jastrow3Idx[i + 2*NJastrow3Lines];
-	  int s3 = Jastrow3Idx[i + 3*NJastrow3Lines];
+	  int n  = Jastrow3Idx[i + 0*NJastrow3Triplets];
+	  int s1 = Jastrow3Idx[i + 1*NJastrow3Triplets];
+	  int s2 = Jastrow3Idx[i + 2*NJastrow3Triplets];
+	  int s3 = Jastrow3Idx[i + 3*NJastrow3Triplets];
 
 	  if( ri==s1 || ri==s2 || ri==s3 || rj==s1 || rj==s2 || rj==s3 )// update needed
 	    {
@@ -307,7 +281,7 @@ void UpdateProjCnt(const int ri, const int rj, const int s,
 	      int ns2= n0[s2]+n1[s2];
 	      int os2= ( s2==ri ? ns2+1: s2==rj ? ns2-1 : ns2);
 
-	      int ns3= n0[s2]+n1[s2];
+	      int ns3= n0[s3]+n1[s3];
 	      int os3= ( s3==ri ? ns3+1: s3==rj ? ns3-1 : ns3);
 
 	      idx = offset + n;
@@ -473,11 +447,11 @@ void UpdateProjCnt_fsz(const int ri, const int rj, const int s,const int t,
   if(NJastrow3Idx>0)
     {
       offset = NGutzwillerIdx + NJastrowIdx + NSpinJastrowIdx;
-      for(int i=0; i<NJastrow3Idx; i++)
+      for(int i=0; i<NJastrow3Triplets; i++)
 	{
-	  int s1 = Jastrow3Idx[i + 0*NJastrow3Idx];
-	  int s2 = Jastrow3Idx[i + 1*NJastrow3Idx];
-	  int s3 = Jastrow3Idx[i + 2*NJastrow3Idx];
+	  int s1 = Jastrow3Idx[i + 0*NJastrow3Triplets];
+	  int s2 = Jastrow3Idx[i + 1*NJastrow3Triplets];
+	  int s3 = Jastrow3Idx[i + 2*NJastrow3Triplets];
 
 	  if( ri==s1 || ri==s2 || ri==s3 || rj==s1 || rj==s2 || rj==s3 )// update needed
 	    {
@@ -487,10 +461,10 @@ void UpdateProjCnt_fsz(const int ri, const int rj, const int s,const int t,
 	      int ns2= n0[s2]+n1[s2];
 	      int os2= ( s2==ri ? ns2+1: s2==rj ? ns2-1 : ns2);
 
-	      int ns3= n0[s2]+n1[s2];
+	      int ns3= n0[s3]+n1[s3];
 	      int os3= ( s3==ri ? ns3+1: s3==rj ? ns3-1 : ns3);
 
-	      idx = offset + i;
+	      idx = offset + n;
 
 	      projCntNew[idx] += (ns1-1)*(ns2-1)*(ns3-1)-(os1-1)*(os2-1)*(os3-1);	
 	    }
