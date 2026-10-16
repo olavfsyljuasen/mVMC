@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # Update submodules first.
-if [ ! -z $(which git) ] && [ -d .git ]; then
-    echo "Updating (cloning) submodules..."
-    git submodule update -r -i
-fi
+#if [ ! -z $(which git) ] && [ -d .git ]; then
+#    echo "Updating (cloning) submodules..."
+#    git submodule update -r -i
+#fi
 
 if [ -z ${1} ] || [ ${1} = "help" ]; then
     echo ""

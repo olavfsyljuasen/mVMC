@@ -60,7 +60,7 @@ void MakeProjCnt(int *projCnt, const int *eleNum) {
   const int *n1=eleNum+Nsite; //down-spin
   int idx,offset;
   int ri,rj;
-  int xi,xj,xn,xm;
+  int xi,xj,xk,xn,xm;
   int r0,r1,r2,r3;
   const int *dh;
   /* optimization for Kei */
@@ -191,7 +191,7 @@ void UpdateProjCnt(const int ri, const int rj, const int s,
                    const int *eleNum) {
   const int *n0=eleNum;
   const int *n1=eleNum+Nsite;
-  int idx,offset;
+  int idx,offset =0;
   int rk;
   int xi,xn,xm;
   int r0,r1,r2,r3;
@@ -294,10 +294,13 @@ void UpdateProjCnt(const int ri, const int rj, const int s,
   
   if(NDoublonHolon2siteIdx==0 && NDoublonHolon4siteIdx==0) return;
 
-  for(idx=offset;idx<nProj;idx++) projCntNew[idx] = 0;
+
 
   /* 2-site doublon-holon correlation factor */
   offset = NGutzwillerIdx + NJastrowIdx + NSpinJastrowIdx + NJastrow3Idx;
+
+  for(idx=offset;idx<nProj;idx++) projCntNew[idx] = 0;
+  
   #pragma omp parallel for default(shared) private(xn,dh,rk,xi,r0,r1,xm,idx)
   for(xn=0;xn<NDoublonHolon2siteIdx;xn++) {
     dh=DoublonHolon2siteIdx[xn];
@@ -449,9 +452,10 @@ void UpdateProjCnt_fsz(const int ri, const int rj, const int s,const int t,
       offset = NGutzwillerIdx + NJastrowIdx + NSpinJastrowIdx;
       for(int i=0; i<NJastrow3Triplets; i++)
 	{
-	  int s1 = Jastrow3Idx[i + 0*NJastrow3Triplets];
-	  int s2 = Jastrow3Idx[i + 1*NJastrow3Triplets];
-	  int s3 = Jastrow3Idx[i + 2*NJastrow3Triplets];
+          int n  = Jastrow3Idx[i + 0*NJastrow3Triplets];
+	  int s1 = Jastrow3Idx[i + 1*NJastrow3Triplets];
+	  int s2 = Jastrow3Idx[i + 2*NJastrow3Triplets];
+	  int s3 = Jastrow3Idx[i + 3*NJastrow3Triplets];
 
 	  if( ri==s1 || ri==s2 || ri==s3 || rj==s1 || rj==s2 || rj==s3 )// update needed
 	    {
