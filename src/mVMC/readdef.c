@@ -148,38 +148,44 @@ char *ReadBuffIntCmpFlg(FILE *fp, int *iNbuf, int *iComplexFlag) {
   return cerr;
 }
 
-char ReadBuffJastrow3(FILE *fp, int *nIdx, int *nTriplets, int *complexFlag);
+char *ReadBuffJastrow3(FILE *fp, int *nIdx, int *nTriplets, int *complexFlag);
 
-char ReadBuffJastrow3(FILE *fp,int *nIdx,int *nTriplets, int *complexFlag)
+char *ReadBuffJastrow3(FILE *fp,int *nIdx,int *nTriplets, int *complexFlag)
 {
-    char ctmp[DFileNameMax];
-    char key[DFileNameMax];
-
-    if (fgets(ctmp, sizeof ctmp, fp) == NULL) {
-        return 0;
+  char *cerr;
+  char ctmp[D_FileNameMax];
+  char key[D_FileNameMax];
+  
+  
+  cerr = fgets(ctmp, sizeof ctmp, fp);
+  
+  if (cerr == NULL){return cerr;}
+  
+  if((fgets(ctmp, sizeof ctmp, fp) == NULL) ||
+    sscanf(ctmp, "%s %d", key, nIdx) != 2 ||
+    strcmp(key, "NJastrow3Idx") != 0 ||
+     *nIdx < 0)
+    {
+      cerr = NULL;  return cerr;
+    }
+  
+  if( fgets(ctmp, sizeof ctmp, fp) == NULL ||
+    sscanf(ctmp, "%s %d", key, nTriplets) != 2 ||
+    strcmp(key, "NJastrow3Triplets") != 0 ||
+      *nTriplets < 0)
+    {
+      cerr = NULL;  return cerr;
     }
 
-    if (fgets(ctmp, sizeof ctmp, fp) == NULL ||
-        sscanf(ctmp, "%s %d", key, nIdx) != 2 ||
-        strcmp(key, "NJastrow3Idx") != 0 ||
-        *nIdx < 0) {
-        return 0;
+  if( fgets(ctmp, sizeof ctmp, fp) == NULL ||
+      sscanf(ctmp, "%s %d", key, complexFlag) != 2 ||
+      strcmp(key, "ComplexType") != 0 ||
+      (*complexFlag != 0 && *complexFlag != 1))
+    {
+      cerr = NULL;  return cerr;
     }
-
-    if (fgets(ctmp, sizeof ctmp, fp) == NULL ||
-        sscanf(ctmp, "%s %d", key, nTriplets) != 2 ||
-        strcmp(key, "NJastrow3Triplets") != 0 ||
-        *nTriplets < 0) {
-        return 0;
-    }
-
-    if (fgets(ctmp, sizeof ctmp, fp) == NULL ||
-        sscanf(ctmp, "%s %d", key, complexFlag) != 2 ||
-        strcmp(key, "ComplexType") != 0 ||
-        (*complexFlag != 0 && *complexFlag != 1)) {
-        return 0;
-    }
-    return 1;
+  
+  return cerr;
 }
 
 void SetDefaultValuesModPara(int *buf, double *bufDouble);
@@ -2689,7 +2695,7 @@ int GetInfoJastrow(FILE *fp, int **ArrayIdx, int *ArrayOpt, int iComplxFlag, int
 int GetInfoJastrow3(FILE *fp, int *ArrayIdx, int *ArrayOpt, int iComplxFlag, int *iOptCount, int fidx, int Nsite,
 		    int NArray, int Ntriplets, char *defname)
 {
-  int idx0 = 0, info = 0;
+  int idx0 = 0, info = 0, idx1 = 0;
   int i = 0, j = 0, k = 0, n = 0;
   int tmp = 0 ;
   int line = 0;
@@ -2728,7 +2734,7 @@ int GetInfoJastrow3(FILE *fp, int *ArrayIdx, int *ArrayOpt, int iComplxFlag, int
       // sort i,j,k by permutations so that i<j<k
       if( i > j ){tmp=j; j=i; i=tmp;}
       if( j > k ){tmp=k; k=j; j=tmp;}
-      if( i > j ){tmp=j; j=i; i=rmp;}
+      if( i > j ){tmp=j; j=i; i=tmp;}
       
       if (i == j || i == k || j == k)
 	{
@@ -2775,7 +2781,6 @@ int GetInfoJastrow3(FILE *fp, int *ArrayIdx, int *ArrayOpt, int iComplxFlag, int
     {
       fprintf(stderr, "Error in %s: expected %d Jastrow3 triplets, read %d.\n", defname, Ntriplets, idx0);
       info = 1;
-      break;
     }
   
   
