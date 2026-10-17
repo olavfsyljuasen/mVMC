@@ -1617,41 +1617,45 @@ int ReadInputParameters(char *xNameListFile, MPI_Comm comm) {
           }
           count = NGutzwillerIdx + NJastrowIdx + NSpinJastrowIdx;
           if (NJastrow3Idx > 0) {
-            int *seen = (int *)calloc(NJastrowIdx, sizeof(int));
+            int *seen = (int *)calloc(NJastrow3Idx, sizeof(int));
             if (seen == NULL) {
               fprintf(stderr, "Error: memory allocation failed in InJastrow3 parser.\n");
               info = 1;
               break;
             }
-            for (i = 0; i < NJastrow3Idx; i++) {
-              if (fscanf(fp, "%d %lf %lf ", &idx, &tmp_real, &tmp_comp) != 3) {
-                fprintf(stderr, "Error in %s: invalid parameter row %d in InJastrow3.\n", defname, i + 1);
-                info = 1;
-                break;
-              }
-              if (idx < 0 || idx >= NJastrow3Idx) {
-                fprintf(stderr, "Error in %s: index %d out of range [0, %d) in InJastrow3.\n",
-                        defname, idx, NJastrow3Idx);
-                info = 1;
-                break;
-              }
-              if (seen[idx] != 0) {
-                fprintf(stderr, "Error in %s: duplicated index %d in InJastrow3.\n", defname, idx);
-                info = 1;
-                break;
-              }
-              seen[idx] = 1;
-              Proj[idx+count] = tmp_real + I * tmp_comp;
-            }
-            if (info == 0) {
-              for (i = 0; i < NJastrow3Idx; i++) {
-                if (seen[i] == 0) {
-                  fprintf(stderr, "Error in %s: missing index %d in InJastrow3.\n", defname, i);
-                  info = 1;
-                  break;
-                }
-              }
-            }
+            for (i = 0; i < NJastrow3Idx; i++)
+	      {
+		if (fscanf(fp, "%d %lf %lf ", &idx, &tmp_real, &tmp_comp) != 3) {
+		  fprintf(stderr, "Error in %s: invalid parameter row %d in InJastrow3.\n", defname, i + 1);
+		  info = 1;
+		  break;
+		}
+		if (idx < 0 || idx >= NJastrow3Idx) {
+		  fprintf(stderr, "Error in %s: index %d out of range [0, %d) in InJastrow3.\n",
+			  defname, idx, NJastrow3Idx);
+		  info = 1;
+		  break;
+		}
+		if (seen[idx] != 0) {
+		  fprintf(stderr, "Error in %s: duplicated index %d in InJastrow3.\n", defname, idx);
+		  info = 1;
+		  break;
+		}
+		seen[idx] = 1;
+		Proj[idx+count] = tmp_real + I * tmp_comp;
+	      }
+            if (info == 0)
+	      {
+		for (i = 0; i < NJastrow3Idx; i++)
+		  {
+		    if (seen[i] == 0)
+		      {
+			fprintf(stderr, "Error in %s: missing index %d in InJastrow3.\n", defname, i);
+			info = 1;
+			break;
+		      }
+		  }
+	      }
             free(seen);
             if (info != 0) break;
           }
