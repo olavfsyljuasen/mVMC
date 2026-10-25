@@ -41,14 +41,7 @@ int stcOptMain(double *g, const int nSmat, const int * const smatToParaIdx, MPI_
   S = (double*)calloc(nSmat*nSmat, sizeof(double));
   stcOptInit(S, g, nSmat, smatToParaIdx);
 
-  uplo='U'; n=nSmat; nrhs=1; lds=n; ldg=n;
-
-  /* OFS */
-  fprintf(stderr,
-	  "DEBUG DPOSV: uplo=%c n=%d nrhs=%d lds=%d ldg=%d\n",
-	  uplo, n, nrhs, lds, ldg);
-  fflush(stderr);
-  
+  uplo='U'; n=nSmat; nrhs=1; lds=n; ldg=n;  
   M_DPOSV(&uplo, &n, &nrhs, S, &lds, g, &ldg, &info);
 
   free(S);

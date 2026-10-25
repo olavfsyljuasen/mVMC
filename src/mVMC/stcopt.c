@@ -28,6 +28,8 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 
 // #define _DEBUG_STCOPT
 
+#include <math.h>
+#include <stdio.h>
 #include "stcopt.h"
 
 int StochasticOpt(MPI_Comm comm) {
@@ -94,6 +96,7 @@ int StochasticOpt(MPI_Comm comm) {
   }
 
 // search for max and min
+/*
   sDiag = r[0];
   sDiagMax=sDiag; sDiagMin=sDiag;
   for(pi=0;pi<2*nPara;pi++) {
@@ -101,7 +104,64 @@ int StochasticOpt(MPI_Comm comm) {
     if(sDiag>sDiagMax) sDiagMax=sDiag;
     if(sDiag<sDiagMin) sDiagMin=sDiag;
   }
+*/
 
+/* Determine the cutoff scale from optimizable coordinates only.  OFS */
+int activeCount = 0;
+int badDiagCount = 0;
+
+sDiagMax = 0.0;
+sDiagMin = 0.0;
+
+
+for (pi = 0; pi < 2*nPara; pi++)
+  {
+#ifdef _DEBUG_STCOPT
+    if (OptFlag[pi] != 1)
+      {
+	fprintf(stderr,
+		"DEBUG fixed: pi=%d flag=%d diagonal=%.17g\n",
+		pi, OptFlag[pi], r[pi]);
+	continue;
+      }
+#endif
+    sDiag = r[pi];
+
+    if (!isfinite(sDiag)) {
+        fprintf(stderr,
+                "ERROR SR: nonfinite diagonal pi=%d value=%.17g\n",
+                pi, sDiag);
+        badDiagCount++;
+        continue;
+    }
+
+    if (activeCount == 0) {
+        sDiagMax = sDiag;
+        sDiagMin = sDiag;
+    } else {
+        if (sDiag > sDiagMax) sDiagMax = sDiag;
+        if (sDiag < sDiagMin) sDiagMin = sDiag;
+    }
+
+    activeCount++;
+}
+
+ 
+#ifdef _DEBUG_STCOPT
+ fprintf(stderr,
+        "DEBUG active SR: count=%d min=%.17g max=%.17g cutoff=%.17g\n",
+	 activeCount, sDiagMin, sDiagMax,
+	 sDiagMax * DSROptRedCut);
+ fflush(stderr);
+#endif
+ 
+if (badDiagCount > 0 || activeCount == 0 || sDiagMax <= 0.0) {
+    fprintf(stderr, "ERROR SR: invalid active diagonal statistics.\n");
+    MPI_Abort(comm, 1);
+}
+// Until here OFS
+
+  
 // threshold
 // optNum = number of parameters 
 // cutNum: number of paramers that are cut
@@ -125,13 +185,15 @@ int StochasticOpt(MPI_Comm comm) {
   }
   nSmat = si;
 
-  /* OFS */
+#ifdef _DEBUG_STCOPT  
+  /* OFS */  
   fprintf(stderr,
         "DEBUG SR: NPara=%d nSmat=%d optNum=%d cutNum=%d "
         "diagCutThreshold=%.17g\n",
         NPara, nSmat, optNum, cutNum, diagCutThreshold);
   fflush(stderr);
-
+#endif
+  
   for(si=nSmat;si<2*nPara;si++) {
     smatToParaIdx[si] = -1; // parameters that will not be optimized
   }
