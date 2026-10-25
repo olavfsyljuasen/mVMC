@@ -116,15 +116,17 @@ sDiagMin = 0.0;
 
 for (pi = 0; pi < 2*nPara; pi++)
   {
-#ifdef _DEBUG_STCOPT
+    //#ifdef _DEBUG_STCOPT
     if (OptFlag[pi] != 1)
       {
+#ifdef _DEBUG_STCOPT	
 	fprintf(stderr,
 		"DEBUG fixed: pi=%d flag=%d diagonal=%.17g\n",
 		pi, OptFlag[pi], r[pi]);
+#endif
 	continue;
       }
-#endif
+    //#endif
     sDiag = r[pi];
 
     if (!isfinite(sDiag)) {
