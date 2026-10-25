@@ -124,6 +124,14 @@ int StochasticOpt(MPI_Comm comm) {
 // e
   }
   nSmat = si;
+
+  /* OFS */
+  fprintf(stderr,
+        "DEBUG SR: NPara=%d nSmat=%d optNum=%d cutNum=%d "
+        "diagCutThreshold=%.17g\n",
+        NPara, nSmat, optNum, cutNum, diagCutThreshold);
+  fflush(stderr);
+
   for(si=nSmat;si<2*nPara;si++) {
     smatToParaIdx[si] = -1; // parameters that will not be optimized
   }
