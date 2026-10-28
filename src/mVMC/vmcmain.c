@@ -326,6 +326,19 @@ int main(int argc, char* argv[])
   MPI_Finalize();
   if(rank0==0) fprintf(stdout,"Finish calculation.\n");
 
+  // begin OFS
+  if(info==0)
+    {
+      FILE* endfile = fopen("end.exec", "w");
+      fclose(endfile);
+    }
+  else
+    {
+      FILE* errorfile = fopen("interrupted.exec", "w");
+      fclose(errorfile);
+    }
+  // end OFS
+  
   return info;
 }
 
